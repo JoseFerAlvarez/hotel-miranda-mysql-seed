@@ -13,8 +13,6 @@ run();
 
 const rooms: IntRoom[] = [];
 const users: IntUser[] = [];
-const bookings: IntBooking[] = [];
-const contacts: IntContact[] = [];
 
 async function run() {
     await connection.connect();
@@ -22,10 +20,25 @@ async function run() {
     await createUsersTable();
     await createBookingsTable();
     await createContactsTable();
-    await insertRooms(40);
-    await insertUsers(40);
-    await insertBookings(40);
-    await insertContacts(40);
+
+    if (!process.argv[3]) {
+        console.log("Inserting 20 rows...");
+        await insertRooms(20);
+        await insertUsers(20);
+        await insertBookings(20);
+        await insertContacts(20);
+        console.log("Rows inserted");
+    } else {
+        const rows = Number(process.argv[3]);
+
+        console.log(`Inserting ${rows} rows...`);
+        await insertRooms(rows);
+        await insertUsers(rows);
+        await insertBookings(rows);
+        await insertContacts(rows);
+        console.log("Rows inserted");
+    }
+
     await connection.end();
 }
 
@@ -112,10 +125,9 @@ async function insertUsers(number: number): Promise<void> {
 
 async function insertBookings(number: number): Promise<void> {
     for (let i = 0; i < number; i++) {
-        const room: IntRoom = rooms[Math.round(Math.random() * rooms.length - 1)];
-        const user: IntUser = users[Math.round(Math.random() * rooms.length - 1)];
+        const room: IntRoom = rooms[Math.round(Math.random() * (rooms.length - 2) + 1)];
+        const user: IntUser = users[Math.round(Math.random() * (users.length - 2) + 1)];
         const booking: IntBooking = await setRandomBooking(room, user);
-        await bookings.push(booking);
         await dbQuery("INSERT INTO bookings SET ?", booking);
     }
 }
@@ -123,7 +135,6 @@ async function insertBookings(number: number): Promise<void> {
 async function insertContacts(number: number): Promise<void> {
     for (let i = 0; i < number; i++) {
         const contact: IntContact = await setRandomContact();
-        await contacts.push(contact);
         await dbQuery("INSERT INTO contacts SET ?", contact);
     }
 }
@@ -132,8 +143,8 @@ async function setRandomRoom(): Promise<IntRoom> {
     return await {
         numroom: faker.datatype.number({ max: 1000 }),
         photo: await generateRandomPhoto(),
-        typeroom: generateRandomType(),
-        amenities: generateRandomAmenities(),
+        typeroom: await generateRandomType(),
+        amenities: await generateRandomAmenities(),
         price: faker.datatype.number({ max: 100000 }),
         offer: faker.datatype.number({ max: 90 }),
         status: faker.datatype.number({ min: 0, max: 1 }),
@@ -161,9 +172,9 @@ async function getHashPass(pass: string): Promise<string> {
 }
 
 async function setRandomBooking(room: IntRoom, user: IntUser): Promise<IntBooking> {
-    const bookingOrder: Date = generateRandomDate(null);
-    const bookingCheckIn: Date = generateRandomDate(bookingOrder);
-    const bookingCheckOut: Date = generateRandomDate(bookingCheckIn);
+    const bookingOrder: Date = await generateRandomDate(null);
+    const bookingCheckIn: Date = await generateRandomDate(bookingOrder);
+    const bookingCheckOut: Date = await generateRandomDate(bookingCheckIn);
 
     const bookingOrderFormat: string = bookingOrder.toLocaleDateString("es-ES");
     const bookingCheckInFormat: string = bookingCheckIn.toLocaleDateString("es-ES");
@@ -196,11 +207,11 @@ async function setRandomContact(): Promise<IntContact> {
     }
 }
 
-function generateRandomAmenities(): string {
+async function generateRandomAmenities(): Promise<string> {
     const number: number = Math.round(Math.random() * (10 - 4) + 4);
     const amenities: string[] = ["Air conditioner", "Breakfast", "Cleaning", "Grocery", "Shop near", "High speed WiFi", "Kitchen", "Shower", "Single bed", "Towels"];
 
-    return faker.helpers.arrayElements(amenities, number).toString();
+    return await faker.helpers.arrayElements(amenities, number).toString();
 }
 
 async function generateRandomPhoto(): Promise<string> {
@@ -214,18 +225,18 @@ async function generateRandomPhoto(): Promise<string> {
         "https://images.unsplash.com/photo-1540518614846-7eded433c457?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1157&q=80",
         "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
     ];
-    return faker.helpers.arrayElement(photos);
+    return await faker.helpers.arrayElement(photos);
 }
 
-function generateRandomType(): string {
+async function generateRandomType(): Promise<string> {
     const roomtypes: string[] = ["Single Bed", "Double Bed", "Double Superior", "Suite"];
-    return faker.helpers.arrayElement(roomtypes);
+    return await faker.helpers.arrayElement(roomtypes);
 }
 
-function generateRandomDate(date: Date | null): Date {
+async function generateRandomDate(date: Date | null): Promise<Date> {
     const initDate = "2020-01-01T00:00:00.000Z";
     const currentDate = String(new Date(Date.now()).toISOString());
     const randomdate: Date = faker.date.between(date || initDate, currentDate);
 
-    return randomdate;
+    return await randomdate;
 }

@@ -41,8 +41,6 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 run();
 const rooms = [];
 const users = [];
-const bookings = [];
-const contacts = [];
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         yield connection_1.default.connect();
@@ -50,10 +48,23 @@ function run() {
         yield createUsersTable();
         yield createBookingsTable();
         yield createContactsTable();
-        yield insertRooms(40);
-        yield insertUsers(40);
-        yield insertBookings(40);
-        yield insertContacts(40);
+        if (!process.argv[3]) {
+            console.log("Inserting 20 rows...");
+            yield insertRooms(20);
+            yield insertUsers(20);
+            yield insertBookings(20);
+            yield insertContacts(20);
+            console.log("Rows inserted");
+        }
+        else {
+            const rows = Number(process.argv[3]);
+            console.log(`Inserting ${rows} rows...`);
+            yield insertRooms(rows);
+            yield insertUsers(rows);
+            yield insertBookings(rows);
+            yield insertContacts(rows);
+            console.log("Rows inserted");
+        }
         yield connection_1.default.end();
     });
 }
@@ -141,10 +152,9 @@ function insertUsers(number) {
 function insertBookings(number) {
     return __awaiter(this, void 0, void 0, function* () {
         for (let i = 0; i < number; i++) {
-            const room = rooms[Math.round(Math.random() * rooms.length - 1)];
-            const user = users[Math.round(Math.random() * rooms.length - 1)];
+            const room = rooms[Math.round(Math.random() * (rooms.length - 2) + 1)];
+            const user = users[Math.round(Math.random() * (users.length - 2) + 1)];
             const booking = yield setRandomBooking(room, user);
-            yield bookings.push(booking);
             yield (0, connection_1.dbQuery)("INSERT INTO bookings SET ?", booking);
         }
     });
@@ -153,7 +163,6 @@ function insertContacts(number) {
     return __awaiter(this, void 0, void 0, function* () {
         for (let i = 0; i < number; i++) {
             const contact = yield setRandomContact();
-            yield contacts.push(contact);
             yield (0, connection_1.dbQuery)("INSERT INTO contacts SET ?", contact);
         }
     });
@@ -163,8 +172,8 @@ function setRandomRoom() {
         return yield {
             numroom: faker_1.faker.datatype.number({ max: 1000 }),
             photo: yield generateRandomPhoto(),
-            typeroom: generateRandomType(),
-            amenities: generateRandomAmenities(),
+            typeroom: yield generateRandomType(),
+            amenities: yield generateRandomAmenities(),
             price: faker_1.faker.datatype.number({ max: 100000 }),
             offer: faker_1.faker.datatype.number({ max: 90 }),
             status: faker_1.faker.datatype.number({ min: 0, max: 1 }),
@@ -195,9 +204,9 @@ function getHashPass(pass) {
 }
 function setRandomBooking(room, user) {
     return __awaiter(this, void 0, void 0, function* () {
-        const bookingOrder = generateRandomDate(null);
-        const bookingCheckIn = generateRandomDate(bookingOrder);
-        const bookingCheckOut = generateRandomDate(bookingCheckIn);
+        const bookingOrder = yield generateRandomDate(null);
+        const bookingCheckIn = yield generateRandomDate(bookingOrder);
+        const bookingCheckOut = yield generateRandomDate(bookingCheckIn);
         const bookingOrderFormat = bookingOrder.toLocaleDateString("es-ES");
         const bookingCheckInFormat = bookingCheckIn.toLocaleDateString("es-ES");
         const bookingCheckOutFormat = bookingCheckOut.toLocaleDateString("es-ES");
@@ -230,9 +239,11 @@ function setRandomContact() {
     });
 }
 function generateRandomAmenities() {
-    const number = Math.round(Math.random() * (10 - 4) + 4);
-    const amenities = ["Air conditioner", "Breakfast", "Cleaning", "Grocery", "Shop near", "High speed WiFi", "Kitchen", "Shower", "Single bed", "Towels"];
-    return faker_1.faker.helpers.arrayElements(amenities, number).toString();
+    return __awaiter(this, void 0, void 0, function* () {
+        const number = Math.round(Math.random() * (10 - 4) + 4);
+        const amenities = ["Air conditioner", "Breakfast", "Cleaning", "Grocery", "Shop near", "High speed WiFi", "Kitchen", "Shower", "Single bed", "Towels"];
+        return yield faker_1.faker.helpers.arrayElements(amenities, number).toString();
+    });
 }
 function generateRandomPhoto() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -246,17 +257,21 @@ function generateRandomPhoto() {
             "https://images.unsplash.com/photo-1540518614846-7eded433c457?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1157&q=80",
             "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
         ];
-        return faker_1.faker.helpers.arrayElement(photos);
+        return yield faker_1.faker.helpers.arrayElement(photos);
     });
 }
 function generateRandomType() {
-    const roomtypes = ["Single Bed", "Double Bed", "Double Superior", "Suite"];
-    return faker_1.faker.helpers.arrayElement(roomtypes);
+    return __awaiter(this, void 0, void 0, function* () {
+        const roomtypes = ["Single Bed", "Double Bed", "Double Superior", "Suite"];
+        return yield faker_1.faker.helpers.arrayElement(roomtypes);
+    });
 }
 function generateRandomDate(date) {
-    const initDate = "2020-01-01T00:00:00.000Z";
-    const currentDate = String(new Date(Date.now()).toISOString());
-    const randomdate = faker_1.faker.date.between(date || initDate, currentDate);
-    return randomdate;
+    return __awaiter(this, void 0, void 0, function* () {
+        const initDate = "2020-01-01T00:00:00.000Z";
+        const currentDate = String(new Date(Date.now()).toISOString());
+        const randomdate = faker_1.faker.date.between(date || initDate, currentDate);
+        return yield randomdate;
+    });
 }
 //# sourceMappingURL=seed.js.map
